@@ -73,7 +73,7 @@ class Sitemap {
 	/**
 	 * Assigns XMLWriter object instance
 	 *
-	 * @param \XMLWriter $writer 
+	 * @param \XMLWriter $writer
 	 */
 	private function setWriter(\XMLWriter $writer) {
 		$this->writer = $writer;
@@ -81,7 +81,7 @@ class Sitemap {
 
 	/**
 	 * Returns path of sitemaps
-	 * 
+	 *
 	 * @return string
 	 */
 	private function getPath() {
@@ -90,7 +90,7 @@ class Sitemap {
 
 	/**
 	 * Sets paths of sitemaps
-	 * 
+	 *
 	 * @param string $path
 	 * @return Sitemap
 	 */
@@ -101,7 +101,7 @@ class Sitemap {
 
 	/**
 	 * Returns filename of sitemap file
-	 * 
+	 *
 	 * @return string
 	 */
 	private function getFilename() {
@@ -110,7 +110,7 @@ class Sitemap {
 
 	/**
 	 * Sets filename of sitemap file
-	 * 
+	 *
 	 * @param string $filename
 	 * @return Sitemap
 	 */
@@ -130,7 +130,7 @@ class Sitemap {
 
 	/**
 	 * Increases item counter
-	 * 
+	 *
 	 */
 	private function incCurrentItem() {
 		$this->current_item = $this->current_item + 1;
@@ -147,7 +147,7 @@ class Sitemap {
 
 	/**
 	 * Increases sitemap file count
-	 * 
+	 *
 	 */
 	private function incCurrentSitemap() {
 		$this->current_sitemap = $this->current_sitemap + 1;
@@ -155,7 +155,7 @@ class Sitemap {
 
 	/**
 	 * Prepares sitemap XML document
-	 * 
+	 *
 	 */
 	private function startSitemap() {
 		$this->setWriter(new \XMLWriter());
@@ -168,12 +168,13 @@ class Sitemap {
 		$this->getWriter()->setIndent(true);
 		$this->getWriter()->startElement('urlset');
 		$this->getWriter()->writeAttribute('xmlns', self::SCHEMA);
+		$this->getWriter()->writeAttribute('xmlns:xhtml' ,"http://www.w3.org/1999/xhtml");
 	}
 
 	/**
 	 * Adds an item to sitemap
 	 *
-	 * @param string $loc URL of the page. This value must be less than 2,048 characters. 
+	 * @param string $loc URL of the page. This value must be less than 2,048 characters.
 	 * @param string|null $priority The priority of this URL relative to other URLs on your site. Valid values range from 0.0 to 1.0.
 	 * @param string|null $changefreq How frequently the page is likely to change. Valid values are always, hourly, daily, weekly, monthly, yearly and never.
 	 * @param string|int|null $lastmod The date of last modification of url. Unix timestamp or any English textual datetime description.
@@ -189,7 +190,26 @@ class Sitemap {
 		}
 		$this->incCurrentItem();
 		$this->getWriter()->startElement('url');
-		$this->getWriter()->writeElement('loc', $this->getDomain() . $loc);
+		if (is_string($loc)) {
+			$this->getWriter()->writeElement('loc', $this->getDomain() . $loc);
+		} else if (is_array($loc)) {
+			foreach ($loc as $language => $alternate_loc) {
+				if ($language == 'default') {
+					$this->getWriter()->writeElement('loc', $this->getDomain() . $alternate_loc);
+					$this->getWriter()->startElement('xhtml:link');
+					$this->getWriter()->writeAttribute('rel', 'alternate');
+					$this->getWriter()->writeAttribute('hreflang', 'x-default');
+					$this->getWriter()->writeAttribute('href', $this->getDomain() . $alternate_loc);
+					$this->getWriter()->endElement();
+				} else {
+					$this->getWriter()->startElement('xhtml:link');
+					$this->getWriter()->writeAttribute('rel', 'alternate');
+					$this->getWriter()->writeAttribute('hreflang', $language);
+					$this->getWriter()->writeAttribute('href', $this->getDomain() . $alternate_loc);
+					$this->getWriter()->endElement();
+				}
+			}
+		}
 		if($priority !== null)
 			$this->getWriter()->writeElement('priority', $priority);
 		if ($changefreq)
